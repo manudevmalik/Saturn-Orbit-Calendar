@@ -2,7 +2,7 @@
 
 Orbit is an AI-native, social-first personal calendar designed exclusively for middle and high school students. It unifies academic timetables and personal commitments into one elegant, real-time schedule interface, and facilitates seamless hangout planning with friends.
 
-This repository contains the interactive prototype, the full product requirements documentation, and executive briefing notes.
+This repository contains the interactive prototype and the full product requirements documentation.
 
 ---
 
@@ -25,8 +25,6 @@ This repository contains the interactive prototype, the full product requirement
 
 ## 📄 Documentation
 *   **Product Requirements Document (PRD):** [`Orbit-Student-Calendar-PRD.md`](Orbit-Student-Calendar-PRD.md)
-*   **PRD Word Export:** [`Orbit-Student-Calendar-PRD.docx`](Orbit-Student-Calendar-PRD.docx)
-*   **CEO Strategy Briefing:** [`Orbit-CEO-Presentation-Brief.docx`](Orbit-CEO-Presentation-Brief.docx)
 
 ---
 
