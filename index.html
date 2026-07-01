@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orbit — Student Calendar</title>
+  <meta name="description" content="Orbit is a student calendar with real-time class periods, friend availability, and smart schedule import." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:      #0c0c14;
+      --card:    #13131f;
+      --card2:   #1a1a2a;
+      --line:    rgba(255,255,255,0.08);
+      --line2:   rgba(255,255,255,0.14);
+
+      --purple:  #7857ff;
+      --purple2: #9b7dff;
+      --green:   #22c55e;
+      --red:     #f43f5e;
+      --amber:   #f59e0b;
+      --blue:    #3b82f6;
+      --pink:    #e879f9;
+      --teal:    #14b8a6;
+
+      --text:    #e8e8f0;
+      --muted:   #7878a0;
+      --faint:   #3a3a55;
+
+      --r:    12px;
+      --r-lg: 18px;
+      --r-xl: 24px;
+      --ease: 0.18s ease;
+    }
+
+    html[data-theme="light"] {
+      --bg:      #f4f4fa;
+      --card:    #ffffff;
+      --card2:   #eaeaf5;
+      --line:    rgba(0,0,0,0.06);
+      --line2:   rgba(0,0,0,0.11);
+      --text:    #1c1c28;
+      --muted:   #686888;
+      --faint:   #c8c8dc;
+      --purple:  #633dfa;
+      --purple2: #7e57ff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; transition: background var(--ease), color var(--ease); }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    input, textarea { font-family: inherit; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+    .hidden { display: none !important; }
+
+    /* ── ONBOARDING ─────────────────────────── */
+    #onboarding {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .ob-brand {
+      display: flex; align-items: center; gap: 11px;
+      margin-bottom: 32px;
+    }
+    .ob-icon {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: var(--purple);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .ob-name { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+
+    .ob-card {
+      width: 100%; max-width: 420px;
+      background: var(--card);
+      border: 1px solid var(--line2);
+      border-radius: var(--r-xl);
+      padding: 32px 28px;
+    }
+    .ob-steps { display: flex; gap: 6px; margin-bottom: 28px; }
+    .ob-step { flex: 1; height: 3px; border-radius: 2px; background: var(--faint); transition: background var(--ease); }
+    .ob-step.on  { background: var(--purple); }
+    .ob-step.done{ background: var(--green); }
+
+    .ob-heading { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
+    .ob-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+
+    .age-row { display: flex; gap: 8px; margin-bottom: 20px; }
+    .age-opt {
+      flex: 1; padding: 14px 10px; border-radius: var(--r);
+      background: var(--card2); border: 1.5px solid var(--line);
+      color: var(--text); font-size: 14px; font-weight: 600;
+      transition: var(--ease);
+    }
+    .age-opt:hover { border-color: var(--line2); }
+    .age-opt.sel   { border-color: var(--purple); background: rgba(120,87,255,0.12); color: var(--purple2); }
+
+    .s-inp-wrap { position: relative; margin-bottom: 12px; }
+    .s-inp-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 15px; pointer-events: none; }
+    .s-inp {
+      width: 100%; padding: 11px 12px 11px 38px;
+      background: var(--card2); border: 1px solid var(--line2);
+      border-radius: var(--r); color: var(--text); font-size: 14px;
+    }
+    .s-inp:focus { outline: none; border-color: var(--purple); }
+    .school-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; padding-right: 2px; margin-bottom: 16px; }
+    .school-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: var(--r);
+      background: var(--card2); border: 1.5px solid transparent;
+      cursor: pointer; transition: var(--ease);
+    }
+    .school-row:hover  { border-color: var(--line2); }
+    .school-row.sel    { border-color: var(--purple); background: rgba(120,87,255,0.1); }
+    .school-row-name   { font-size: 13px; font-weight: 600; }
+    .school-row-loc    { font-size: 11px; color: var(--muted); }
+
+    .f-search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .f-inp {
+      flex: 1; padding: 10px 12px;
+      background: var(--card2); border: 1px solid var(--line2);
+      border-radius: var(--r); color: var(--text); font-size: 14px;
+    }
+    .f-inp:focus { outline: none; border-color: var(--purple); }
+    .f-sugg-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; margin-bottom: 18px; }
+    .f-sugg-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r);
+      background: var(--card2); cursor: default;
+    }
+    .f-sugg-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+    .f-sugg-name { font-size: 13px; font-weight: 600; flex: 1; }
+    .f-sugg-uname { font-size: 11px; color: var(--muted); }
+    .add-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1.5px solid var(--faint); color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; transition: var(--ease);
+    }
+    .add-circle:hover { border-color: var(--purple); color: var(--purple2); }
+    .add-circle.added { background: var(--green); border-color: var(--green); color: white; }
+
+    /* Shared buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 11px 20px; border-radius: var(--r);
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--ease);
+    }
+    .btn-primary { background: var(--purple); color: white; }
+    .btn-primary:hover { background: var(--purple2); }
+    .btn-ghost { background: var(--card2); color: var(--muted); border: 1px solid var(--line); }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-sm { padding: 8px 14px; font-size: 13px; }
+    .btn-xs { padding: 5px 11px; font-size: 12px; border-radius: 8px; }
+    .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+
+    /* ── MAIN APP ───────────────────────────── */
+    #main-app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; gap: 10px;
+      padding: 13px 18px;
+      background: rgba(12,12,20,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    html[data-theme="light"] .header {
+      background: rgba(244,244,250,0.92);
+    }
+    .header-brand { display: flex; align-items: center; gap: 8px; }
+    .header-icon { width: 28px; height: 28px; border-radius: 9px; background: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .header-name { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-date { margin-left: auto; font-size: 13px; color: var(--muted); font-weight: 500; }
+    .header-actions { display: flex; gap: 6px; }
+    .hbtn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--card); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: var(--muted); cursor: pointer; transition: var(--ease);
+      position: relative;
+    }
+    .hbtn:hover { color: var(--text); background: var(--card2); }
+    .hbtn-badge {
+      position: absolute; top: -2px; right: -2px;
+      width: 15px; height: 15px; border-radius: 50%;
+      background: var(--red); color: white; font-size: 9px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--bg);
+    }
+    .h-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border: 1.5px solid var(--line2);
+    }
+
+    /* Content */
+    .content { flex: 1; padding: 18px; max-width: 860px; margin: 0 auto; width: 100%; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: sticky; bottom: 0; z-index: 50;
+      display: flex; align-items: center;
+      padding: 8px 8px 20px;
+      background: rgba(12,12,20,0.94);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--line);
+    }
+    html[data-theme="light"] .bottom-nav {
+      background: rgba(244,244,250,0.94);
+    }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 7px 4px; cursor: pointer; transition: var(--ease);
+    }
+    .nav-item-icon { font-size: 20px; }
+    .nav-item-label { font-size: 10px; font-weight: 600; color: var(--muted); letter-spacing: 0.2px; }
+    .nav-item.active .nav-item-label { color: var(--purple2); }
+    .fab-btn {
+      position: fixed; bottom: 84px; right: 18px; z-index: 99;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--purple); color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(120,87,255,0.4);
+      transition: var(--ease);
+    }
+    .fab-btn:hover { background: var(--purple2); transform: scale(1.06); }
+
+    /* ── TODAY VIEW ─────────────────────────── */
+    .greeting { margin-bottom: 16px; }
+    .greeting h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 2px; }
+    .greeting p  { font-size: 13px; color: var(--muted); }
+
+    /* Period progress widget */
+    .period-widget {
+      background: var(--card);
+      border: 1px solid var(--line2);
+      border-radius: var(--r-lg);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .pw-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .pw-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    .pw-event-name { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+    .pw-event-loc  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .pw-timer { text-align: right; }
+    .pw-timer-num { font-size: 32px; font-weight: 700; letter-spacing: -1.5px; color: var(--purple2); line-height: 1; }
+    .pw-timer-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .pw-bar-track { height: 5px; background: var(--faint); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+    .pw-bar-fill  { height: 100%; border-radius: 3px; background: var(--purple); transition: width 1s linear; }
+    .pw-bar-meta  { display: flex; justify-content: space-between; }
+    .pw-bar-meta span { font-size: 11px; color: var(--muted); }
+
+    /* Day progress bar (slim) */
+    .day-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .day-bar-label { font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+    .day-bar-track { flex: 1; height: 4px; background: var(--faint); border-radius: 2px; overflow: hidden; }
+    .day-bar-fill  { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--purple), var(--teal)); transition: width 1s linear; }
+    .day-bar-pct   { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+
+    /* Sections */
+    .sec-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .sec-hd-title { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0.2px; }
+    .sec-hd-link  { font-size: 13px; color: var(--purple2); font-weight: 600; cursor: pointer; }
+    .sec-hd-link:hover { text-decoration: underline; }
+
+    /* Due items */
+    .due-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .due-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--r);
+      background: var(--card); border: 1px solid var(--line);
+      cursor: pointer; transition: var(--ease);
+    }
+    .due-row:hover { border-color: var(--amber); }
+    .due-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .due-text  { flex: 1; font-size: 14px; font-weight: 500; }
+    .due-text.done { text-decoration: line-through; color: var(--muted); }
+    .due-badge { font-size: 12px; color: var(--amber); font-weight: 600; }
+    .due-check {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 1.5px solid var(--faint); cursor: pointer; transition: var(--ease);
+      display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+    }
+    .due-check.done { background: var(--green); border-color: var(--green); color: white; }
+
+    /* Friends strip */
+    .f-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; }
+    .f-strip::-webkit-scrollbar { display: none; }
+    .f-strip-item { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; }
+    .f-av-wrap { position: relative; }
+    .f-av {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700;
+    }
+    .f-status {
+      position: absolute; bottom: 0; right: 0;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--bg);
+    }
+    .f-status.free { background: var(--green); }
+    .f-status.busy { background: var(--red); }
+    .f-status.soon { background: var(--amber); }
+    .f-strip-name { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    /* Schedule list */
+    .schedule-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px; }
+    .sched-row {
+      display: flex; align-items: stretch;
+      border-radius: var(--r); overflow: hidden;
+      border: 1px solid var(--line); cursor: pointer; transition: var(--ease);
+    }
+    .sched-row:hover { border-color: var(--line2); }
+    .sched-row.now   { border-color: rgba(120,87,255,0.4); }
+    .sched-row.past  { opacity: 0.4; }
+    .sched-bar { width: 4px; flex-shrink: 0; }
+    .sched-body { flex: 1; padding: 10px 12px; background: var(--card); }
+    .sched-row.now .sched-body { background: rgba(120,87,255,0.06); }
+    .sched-name-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+    .sched-name { font-size: 14px; font-weight: 600; }
+    .sched-time { font-size: 12px; color: var(--muted); }
+    .sched-meta { display: flex; align-items: center; gap: 8px; }
+    .sched-loc  { font-size: 12px; color: var(--muted); opacity: 0.8; }
+    .sched-type { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .now-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+      padding: 2px 7px; border-radius: 5px;
+      background: rgba(34,197,94,0.15); color: var(--green);
+    }
+
+    /* ── WEEK VIEW ──────────────────────────── */
+    .wk-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .wk-btn {
+      background: var(--card); border: 1px solid var(--line); color: var(--muted);
+      padding: 6px 12px; border-radius: var(--r); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: var(--ease);
+    }
+    .wk-btn:hover { color: var(--text); }
+    .wk-range { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .ov-btn {
+      margin-left: auto; display: flex; align-items: center; gap: 6px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--r); padding: 6px 12px;
+      font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; transition: var(--ease);
+    }
+    .ov-btn.on { border-color: var(--pink); color: var(--pink); }
+    .wk-grid { display: grid; grid-template-columns: 40px repeat(5,1fr); }
+    .wk-col-hd { text-align: center; padding: 6px 2px; transition: background var(--ease); border-radius: var(--r) var(--r) 0 0; }
+    .wk-col-hd:hover { background: var(--card2); }
+    .wk-col-day { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 3px; }
+    .wk-col-num { font-size: 18px; font-weight: 700; margin-top: 1px; letter-spacing: -0.5px; }
+    .wk-col-num.today {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--purple); color: white; font-size: 14px;
+    }
+    .wk-time { font-size: 10px; color: var(--muted); opacity: 0.6; height: 52px; display: flex; align-items: flex-start; padding-top: 2px; justify-content: flex-end; padding-right: 6px; }
+    .wk-day-col { position: relative; border-left: 1px solid var(--line); }
+    .wk-slot { height: 52px; border-bottom: 1px solid rgba(255,255,255,0.025); position: relative; transition: background var(--ease); }
+    html[data-theme="light"] .wk-slot { border-bottom: 1px solid rgba(0,0,0,0.02); }
+    .wk-ev {
+      position: absolute; left: 2px; right: 2px;
+      border-radius: 5px; padding: 3px 6px;
+      font-size: 11px; font-weight: 600; overflow: hidden;
+      cursor: pointer; transition: var(--ease);
+      border-left: 3px solid transparent; z-index: 2;
+    }
+    .wk-ev:hover { filter: brightness(1.15); z-index: 10; }
+    .wk-ev-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .wk-ev-time { opacity: 0.6; font-size: 10px; }
+    .ov-bar { position: absolute; inset-x: 1px; border-radius: 4px; opacity: 0.18; pointer-events: none; z-index: 1; background: var(--pink); }
+
+    /* ── FRIENDS VIEW ───────────────────────── */
+    .ft-banner {
+      background: var(--card);
+      border: 1px solid var(--line2);
+      border-radius: var(--r-lg); padding: 18px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; cursor: pointer; transition: var(--ease);
+    }
+    .ft-banner:hover { border-color: var(--purple); }
+    .ft-banner h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; margin-bottom: 3px; }
+    .ft-banner p  { font-size: 13px; color: var(--muted); }
+    .ft-icon { font-size: 36px; }
+    .friends-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+    .friend-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: var(--r);
+      background: var(--card); border: 1px solid var(--line);
+      cursor: pointer; transition: var(--ease);
+    }
+    .friend-row:hover { border-color: var(--line2); }
+    .fr-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+    .fr-info { flex: 1; }
+    .fr-name   { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .fr-status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+    .fr-dot    { width: 6px; height: 6px; border-radius: 50%; }
+    .fr-badge  {
+      font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      margin-right: 6px;
+    }
+    .fr-badge.free { background: rgba(34,197,94,0.12); color: var(--green); }
+    .fr-badge.busy { background: rgba(244,63,94,0.12);  color: var(--red); }
+    .fr-badge.soon { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .add-friend-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: var(--r);
+      border: 1.5px dashed var(--faint); cursor: pointer; transition: var(--ease); color: var(--muted);
+    }
+    .add-friend-row:hover { border-color: var(--purple); color: var(--purple2); }
+
+    /* ── BOARD VIEW ─────────────────────────── */
+    .board-list { display: flex; flex-direction: column; gap: 7px; }
+    .board-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: var(--r);
+      background: var(--card); border: 1px solid var(--line);
+      cursor: pointer; transition: var(--ease);
+    }
+    .board-row:hover { border-color: var(--line2); }
+    .board-icon { font-size: 20px; width: 20px; flex-shrink: 0; }
+    .board-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .board-meta  { font-size: 12px; color: var(--muted); }
+    .board-tag   { margin-left: auto; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 6px; }
+    .board-tag.new  { background: rgba(120,87,255,0.15); color: var(--purple2); }
+    .board-tag.hot  { background: rgba(244,63,94,0.12); color: var(--red); }
+
+    /* ── MY AI CHAT VIEW ────────────────────── */
+    .ai-chat-container {
+      display: flex; flex-direction: column; height: calc(100vh - 160px);
+      background: var(--card); border: 1px solid var(--line2); border-radius: var(--r-lg); overflow: hidden;
+    }
+    .ai-chat-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05);
+    }
+    .ai-chat-avatar {
+      width: 36px; height: 36px; border-radius: 50%; background: #ffe600; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1.5px solid var(--line2); overflow: hidden;
+    }
+    .ai-chat-meta { flex: 1; }
+    .ai-chat-name { font-size: 14px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+    .ai-chat-name:hover::after { content: ' ✏️'; font-size: 10px; opacity: 0.7; }
+    .ai-chat-status { font-size: 11px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+    .ai-chat-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+    
+    .ai-messages-scroll {
+      flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    }
+    .ai-msg { display: flex; gap: 8px; max-width: 85%; }
+    .ai-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .ai-msg.ai { align-self: flex-start; }
+    
+    .ai-bubble {
+      padding: 10px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.45;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .ai-msg.user .ai-bubble { background: var(--purple); color: white; border-top-right-radius: 2px; }
+    .ai-msg.ai .ai-bubble { background: var(--card2); color: var(--text); border-top-left-radius: 2px; }
+    
+    .ai-msg-time { font-size: 9px; color: var(--muted); margin-top: 4px; text-align: right; }
+    .ai-msg.user .ai-msg-time { text-align: left; }
+    
+    .ai-quick-chips {
+      display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto; background: var(--card); border-top: 1px solid var(--line); scrollbar-width: none;
+    }
+    .ai-quick-chips::-webkit-scrollbar { display: none; }
+    .ai-chip {
+      padding: 6px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--line); color: var(--muted);
+      cursor: pointer; transition: var(--ease); white-space: nowrap;
+    }
+    .ai-chip:hover { border-color: var(--purple); color: var(--text); }
+    
+    .ai-input-bar {
+      display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: rgba(0,0,0,0.03);
+    }
+    .ai-inp-field {
+      flex: 1; padding: 10px 14px; border-radius: 20px;
+      background: var(--card2); border: 1px solid var(--line2);
+      color: var(--text); font-size: 13.5px;
+    }
+    .ai-inp-field:focus { outline: none; border-color: var(--purple); }
+    
+    .typing-indicator {
+      display: flex; align-items: center; gap: 4px; padding: 10px 14px; border-radius: 14px;
+      background: var(--card2); color: var(--muted); font-size: 12px; width: fit-content; align-self: flex-start;
+      margin-left: 44px;
+    }
+    .typing-dot {
+      width: 4px; height: 4px; border-radius: 50%; background: var(--muted);
+      animation: typebounce 1.4s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typebounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* ── BITMOJI CUSTOMIZER ─────────────────── */
+    .bitmoji-preview-card {
+      background: var(--card2); border: 1.5px solid var(--line2); border-radius: var(--r-lg);
+      padding: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+    }
+    .bitmoji-preview-wrap {
+      width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--purple);
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+      background: #e0e0ea; box-shadow: 0 8px 24px rgba(120,87,255,0.2);
+    }
+    .customizer-grid {
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .customizer-row {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .customizer-row-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .customizer-options { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .customizer-options::-webkit-scrollbar { display: none; }
+    
+    .swatch {
+      width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--line2); cursor: pointer; transition: var(--ease); flex-shrink: 0;
+    }
+    .swatch:hover { transform: scale(1.08); }
+    .swatch.sel { border-color: var(--purple); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--purple); }
+    
+    .text-opt {
+      padding: 6px 14px; border-radius: var(--r); background: var(--card2); border: 1px solid var(--line);
+      font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: var(--ease); white-space: nowrap;
+    }
+    .text-opt:hover { color: var(--text); border-color: var(--line2); }
+    .text-opt.sel { border-color: var(--purple); color: var(--purple2); background: rgba(120,87,255,0.12); }
+
+    /* ── MODALS ─────────────────────────────── */
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: fadein .18s ease;
+    }
+    @keyframes fadein { from { opacity:0; } to { opacity:1; } }
+    .modal-sheet {
+      width: 100%; max-width: 500px;
+      background: var(--card);
+      border: 1px solid var(--line2); border-bottom: none;
+      border-radius: var(--r-xl) var(--r-xl) 0 0;
+      max-height: 88vh; overflow-y: auto;
+      animation: slideup .3s cubic-bezier(.32,1,.64,1);
+    }
+    @keyframes slideup { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-handle { width: 32px; height: 4px; background: var(--faint); border-radius: 2px; margin: 12px auto 20px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 0 22px 14px; }
+    .modal-title  { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .modal-close  { width: 28px; height: 28px; border-radius: 50%; background: var(--card2); color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body   { padding: 0 22px 32px; }
+
+    .fg { margin-bottom: 14px; }
+    .fl { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .fi {
+      width: 100%; padding: 10px 12px;
+      background: var(--card2); border: 1px solid var(--line2);
+      border-radius: var(--r); color: var(--text); font-size: 14px;
+    }
+    .fi:focus { outline: none; border-color: var(--purple); }
+
+    .type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 16px; }
+    .type-opt {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 11px 6px; border-radius: var(--r); cursor: pointer;
+      background: var(--card2); border: 1.5px solid transparent; transition: var(--ease);
+    }
+    .type-opt:hover { border-color: var(--line2); }
+    .type-opt.sel  { border-color: var(--purple); background: rgba(120,87,255,0.12); }
+    .type-opt-icon { font-size: 20px; }
+    .type-opt-lbl  { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+    .priv-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .priv-opt {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      background: var(--card2); border: 1px solid var(--line); color: var(--muted);
+      cursor: pointer; transition: var(--ease);
+    }
+    .priv-opt:hover { color: var(--text); }
+    .priv-opt.sel  { border-color: var(--purple); color: var(--purple2); background: rgba(120,87,255,0.12); }
+
+    .ai-row { display: flex; gap: 7px; }
+    .ai-parse {
+      padding: 10px 14px; border-radius: var(--r);
+      background: var(--purple); color: white; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; transition: var(--ease); flex-shrink: 0;
+    }
+    .ai-parse:hover { background: var(--purple2); }
+    .ai-hint {
+      background: rgba(120,87,255,0.1); border: 1px solid rgba(120,87,255,0.2);
+      border-radius: var(--r); padding: 10px 12px; font-size: 13px; color: var(--muted);
+      margin-top: 8px; margin-bottom: 14px;
+    }
+    .ai-hint a { color: var(--purple2); font-weight: 600; cursor: pointer; }
+
+    /* Import modal */
+    .import-zone {
+      border: 1.5px dashed var(--faint); border-radius: var(--r-lg);
+      padding: 40px 20px; text-align: center; cursor: pointer; transition: var(--ease); margin-bottom: 16px;
+    }
+    .import-zone:hover { border-color: var(--purple); }
+    .import-zone-icon  { font-size: 44px; margin-bottom: 12px; display: block; }
+    .import-zone-title { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+    .import-zone-sub   { font-size: 13px; color: var(--muted); }
+    .prog-track { height: 4px; background: var(--faint); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+    .prog-fill  { height: 100%; border-radius: 2px; background: var(--purple); transition: width .5s ease; }
+    .prog-label { font-size: 13px; color: var(--muted); text-align: center; }
+    .rev-list { display: flex; flex-direction: column; gap: 8px; }
+    .rev-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: var(--r);
+      background: var(--card2); border: 1px solid var(--line);
+    }
+    .rev-icon { font-size: 18px; }
+    .rev-info { flex: 1; }
+    .rev-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .rev-meta { font-size: 12px; color: var(--muted); }
+    .rev-btns { display: flex; gap: 5px; }
+    .rev-ok { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .rev-ok:hover { background: rgba(34,197,94,0.25); }
+    .rev-no { background: rgba(244,63,94,0.12); color: var(--red); border: 1px solid rgba(244,63,94,0.2); }
+    .rev-no:hover { background: rgba(244,63,94,0.22); }
+
+    /* Find time modal */
+    .who-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+    .who-chip {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--card2); border-radius: 20px; padding: 5px 12px;
+      font-size: 13px; font-weight: 500;
+    }
+    .slots-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .slot-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: var(--r);
+      background: var(--card2); border: 1.5px solid transparent;
+      cursor: pointer; transition: var(--ease);
+    }
+    .slot-row:hover, .slot-row.sel { border-color: var(--green); background: rgba(34,197,94,0.08); }
+    .slot-time { font-size: 14px; font-weight: 600; }
+    .slot-dur  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .slot-avs  { display: flex; margin-left: auto; }
+    .slot-av   { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid var(--card2); margin-left: -7px; }
+    .vote-row  { display: flex; gap: 7px; margin-bottom: 16px; }
+    .vote-opt  {
+      flex: 1; padding: 12px 8px; border-radius: var(--r);
+      background: var(--card2); border: 1.5px solid var(--line);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      cursor: pointer; transition: var(--ease);
+    }
+    .vote-opt:hover { border-color: var(--purple); }
+    .vote-opt.voted { border-color: var(--green); background: rgba(34,197,94,0.08); }
+    .vote-t { font-size: 12px; font-weight: 600; }
+    .vote-c { font-size: 11px; color: var(--muted); }
+    .vote-c strong { color: var(--green); }
+
+    /* Event detail overlay */
+    .ev-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px; animation: fadein .18s ease;
+    }
+    .ev-card {
+      background: var(--card); border: 1px solid var(--line2);
+      border-radius: var(--r-xl); padding: 24px; width: 100%; max-width: 380px;
+      animation: popin .25s cubic-bezier(.32,1,.64,1);
+    }
+    @keyframes popin { from { opacity:0; transform: scale(.92); } to { opacity:1; transform: scale(1); } }
+    .ev-card-bar   { width: 40px; height: 4px; border-radius: 2px; margin-bottom: 14px; }
+    .ev-card-name  { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 10px; }
+    .ev-card-rows  { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+    .ev-card-row   { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+    .ev-card-row span:first-child { font-size: 16px; width: 20px; flex-shrink: 0; }
+    .ev-card-btns  { display: flex; gap: 7px; }
+
+    /* Notifications dropdown */
+    .notif-drop {
+      position: fixed; top: 58px; right: 14px; z-index: 150;
+      width: 300px; background: var(--card); border: 1px solid var(--line2);
+      border-radius: var(--r-lg); padding: 16px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      animation: popin .2s cubic-bezier(.32,1,.64,1);
+    }
+    .nd-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .nd-row { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .nd-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .nd-icon { font-size: 18px; flex-shrink: 0; }
+    .nd-text { font-size: 13px; color: var(--muted); line-height: 1.4; }
+    .nd-text strong { color: var(--text); display: block; }
+    .nd-time { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+    /* Toasts */
+    .toast-stack { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 300; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+    .toast {
+      background: var(--card2); border: 1px solid var(--line2);
+      border-radius: 20px; padding: 9px 18px;
+      font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      animation: toastin .25s cubic-bezier(.32,1,.64,1);
+    }
+    @keyframes toastin { from { opacity:0; transform:translateY(12px) scale(.94); } to { opacity:1; transform:translateY(0) scale(1); } }
+  </style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div id="onboarding">
+  <div class="ob-brand">
+    <div class="ob-icon">🪐</div>
+    <span class="ob-name">Orbit</span>
+  </div>
+
+  <!-- Step 1: Age -->
+  <div id="ob1" class="ob-card">
+    <div class="ob-steps">
+      <div class="ob-step on"></div>
+      <div class="ob-step"></div>
+      <div class="ob-step"></div>
+    </div>
+    <div class="ob-heading">Welcome to Orbit</div>
+    <div class="ob-sub">Your school schedule, friend plans, and deadlines — all in one place.</div>
+    <div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px">How old are you?</div>
+    <div class="age-row">
+      <button class="age-opt" id="a13"  onclick="pickAge('ok')">13 or older</button>
+      <button class="age-opt" id="aU"   onclick="pickAge('no')">Under 13</button>
+    </div>
+    <div id="age-err" style="font-size:13px;color:var(--red);margin-bottom:12px;display:none">Orbit is for ages 13 and up.</div>
+    <button class="btn btn-primary" style="width:100%" onclick="goStep(2)">Continue</button>
+    
+    <div style="margin: 14px 0 10px; font-size: 11px; color: var(--muted); text-align: center;">or</div>
+    <button class="btn" style="width:100%; background: #FFFC00; color: #000; border: none; font-weight: 700; gap: 8px; justify-content: center;" onclick="connectSnapchat()">
+      <span style="font-size: 16px;">👻</span> Continue with Snapchat
+    </button>
+  </div>
+
+  <!-- Step 2: School -->
+  <div id="ob2" class="ob-card hidden">
+    <div class="ob-steps">
+      <div class="ob-step done"></div>
+      <div class="ob-step on"></div>
+      <div class="ob-step"></div>
+    </div>
+    <div class="ob-heading">Find your school</div>
+    <div class="ob-sub">We'll load your bell schedule and holidays automatically.</div>
+    <div class="s-inp-wrap">
+      <span class="s-inp-icon">⌕</span>
+      <input class="s-inp" id="school-search" type="text" placeholder="Search by name or city..." oninput="filterSchools(this.value)" />
+    </div>
+    <div class="school-list" id="school-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="goStep(1)">Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="goStep(3)">Next</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Friends -->
+  <div id="ob3" class="ob-card hidden">
+    <div class="ob-steps">
+      <div class="ob-step done"></div>
+      <div class="ob-step done"></div>
+      <div class="ob-step on"></div>
+    </div>
+    <div class="ob-heading">Add some friends</div>
+    <div class="ob-sub">See when they're free and plan hangouts without the back-and-forth.</div>
+    <div class="f-search-row">
+      <input class="f-inp" id="f-search" type="text" placeholder="Search by username..." oninput="filterFriendSuggs(this.value)" />
+      <button class="btn btn-primary btn-sm" onclick="addBySearch()">Add</button>
+    </div>
+    <div class="f-sugg-list" id="f-sugg-list"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="goStep(2)">Back</button>
+      <button class="btn btn-ghost btn-sm" onclick="launch()">Skip</button>
+      <button class="btn btn-primary" style="flex:1" onclick="launch()">Get started</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" class="hidden" style="display:flex;flex-direction:column;min-height:100vh">
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-icon">🪐</div>
+      <span class="header-name">Orbit</span>
+    </div>
+    <div class="header-date" id="hdr-date"></div>
+    <div class="header-actions">
+      <div class="hbtn" id="theme-btn" title="Toggle theme" onclick="toggleTheme()">🌙</div>
+      <div class="hbtn" title="Import schedule" onclick="openImport()">↑</div>
+      <div class="hbtn" id="notif-btn" title="Notifications" onclick="toggleNotif()">
+        🔔<div class="hbtn-badge">3</div>
+      </div>
+      <div class="h-avatar" id="hdr-avatar" onclick="openBitmojiBuilder()"></div>
+    </div>
+  </header>
+
+  <main class="content" id="main-content"></main>
+
+  <!-- Floating Action Button for Adding Events -->
+  <div class="fab-btn" onclick="openAddEvent()" title="Add event">+</div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nt-today"    onclick="switchView('today')">
+      <div class="nav-item-icon">📅</div>
+      <div class="nav-item-label">Today</div>
+    </div>
+    <div class="nav-item"        id="nt-week"     onclick="switchView('week')">
+      <div class="nav-item-icon">📆</div>
+      <div class="nav-item-label">Week</div>
+    </div>
+    <div class="nav-item"        id="nt-friends"  onclick="switchView('friends')">
+      <div class="nav-item-icon">👥</div>
+      <div class="nav-item-label">Friends</div>
+    </div>
+    <div class="nav-item"        id="nt-ai"       onclick="switchView('ai')">
+      <div class="nav-item-icon">🤖</div>
+      <div class="nav-item-label">My AI</div>
+    </div>
+    <div class="nav-item"        id="nt-board"    onclick="switchView('board')">
+      <div class="nav-item-icon">📌</div>
+      <div class="nav-item-label">Board</div>
+    </div>
+  </nav>
+</div>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script>
+/* ================================================================
+   DATA
+================================================================ */
+const SCHOOLS = [
+  {name:'Lincoln High School', loc:'San Francisco, CA', icon:'🦁'},
+  {name:'Westwood High School', loc:'Los Angeles, CA', icon:'🐺'},
+  {name:'Jefferson Academy', loc:'New York, NY', icon:'🦅'},
+  {name:'Riverside STEM School', loc:'Chicago, IL', icon:'🌊'},
+  {name:'Eastside Prep', loc:'Austin, TX', icon:'🔬'},
+  {name:'North Star Prep', loc:'Seattle, WA', icon:'⭐'},
+  {name:'Pinecrest High', loc:'Atlanta, GA', icon:'🌲'},
+  {name:'Summit View Academy', loc:'Denver, CO', icon:'🏔️'},
+];
+
+const FRIENDS = [
+  {name:'Maya K.',   uname:'@mayak',   emoji:'🧑',  color:'#7857ff', status:'free'},
+  {name:'Jordan L.', uname:'@jlennox', emoji:'🧒',  color:'#14b8a6', status:'busy'},
+  {name:'Alex M.',   uname:'@alexm',   emoji:'👩',  color:'#e879f9', status:'free'},
+  {name:'Sam R.',    uname:'@samr',    emoji:'🧑‍🦱', color:'#22c55e', status:'soon'},
+  {name:'Riley C.',  uname:'@rileyyy', emoji:'👧',  color:'#f59e0b', status:'busy'},
+  {name:'Chris T.',  uname:'@chrizt',  emoji:'🧔',  color:'#3b82f6', status:'free'},
+];
+
+const EV_COLORS = {
+  class:      {bar:'#7857ff', bg:'rgba(120,87,255,0.14)', text:'#b8a4ff'},
+  assignment: {bar:'#f59e0b', bg:'rgba(245,158,11,0.14)', text:'#fcd34d'},
+  exam:       {bar:'#f43f5e', bg:'rgba(244,63,94,0.14)',  text:'#fb7185'},
+  practice:   {bar:'#22c55e', bg:'rgba(34,197,94,0.14)',  text:'#4ade80'},
+  social:     {bar:'#e879f9', bg:'rgba(232,121,249,0.14)',text:'#f0abfc'},
+  focus:      {bar:'#3b82f6', bg:'rgba(59,130,246,0.14)', text:'#93c5fd'},
+};
+const EV_ICONS = {class:'📚', assignment:'📝', exam:'🧠', practice:'⚽', social:'💬', focus:'🎯'};
+const PRIVS = ['Only me', 'Busy only', 'Friends see', 'Public'];
+
+const BOARD_ITEMS = [
+  {icon:'📣', title:'Varsity Volleyball vs. Lincoln', meta:'Fri, Jul 4 · 5:00 PM · Gym A', tag:'new'},
+  {icon:'🎓', title:'Senior Class Meeting', meta:'Thu, Jul 3 · Lunch · Room 101'},
+  {icon:'🏆', title:'Science Fair — sign-ups open', meta:'Deadline: Jul 10', tag:'hot'},
+  {icon:'🎵', title:'Battle of the Bands — vote now!', meta:'142 votes so far'},
+  {icon:'🎨', title:'Art Show Opening Night', meta:'Jul 12 · 6:00–8:00 PM · Gallery'},
+];
+
+/* ================================================================
+   STATE
+================================================================ */
+const S = {
+  age: null,
+  school: null,
+  friends: [],
+  events: [],
+  view: 'today',
+  weekOff: 0,
+  overlay: false,
+  theme: 'dark',
+  bitmoji: null,
+  myAiName: 'My AI',
+  aiChatHistory: null,
+  dayThemes: {}
+};
+
+/* ================================================================
+   STATE SAVING/SYNC
+================================================================ */
+function saveState() {
+  localStorage.setItem('orbit_state', JSON.stringify(S));
+}
+
+/* ================================================================
+   SNAPCHAT INTEGRATION
+================================================================ */
+function connectSnapchat() {
+  S.age = 'ok';
+  S.friends = [...FRIENDS];
+  saveState();
+  toast('👻 Connected with Snapchat! Imported ' + S.friends.length + ' friends.');
+  goStep(2);
+}
+
+/* ================================================================
+   DYNAMIC BITMOJI SYSTEM
+================================================================ */
+function getBitmojiSVG(o, size = 32) {
+  if (!o) return `<svg width="${size}" height="${size}" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#7857ff"/></svg>`;
+  const skins = { fair:'#fce3db', peach:'#ffd1b3', olive:'#e0ac69', bronze:'#c68642', dark:'#8d5524' };
+  const hairColors = { black:'#111111', brown:'#5c4033', blonde:'#ebd5b3', red:'#b83c1b', pink:'#f472b6', blue:'#3b82f6' };
+  const outfitColors = { purple:'#7857ff', black:'#1a1a2a', yellow:'#FFFC00', pink:'#e879f9', green:'#22c55e' };
+
+  const skin = skins[o.skin] || skins.peach;
+  const hairColor = hairColors[o.hairColor] || hairColors.brown;
+  const outfit = outfitColors[o.outfit] || outfitColors.purple;
+
+  let svg = `<svg viewBox="0 0 40 40" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="border-radius: 50%; overflow: hidden; background: #e6e6f0;">`;
+  svg += `<path d="M 6 40 C 6 31, 34 31, 34 40 Z" fill="${outfit}" />`;
+  svg += `<rect x="17" y="25" width="6" height="6" fill="${skin}" />`;
+  svg += `<circle cx="20" cy="17" r="9" fill="${skin}" />`;
+
+  if (o.hairStyle === 'buzz') {
+    svg += `<path d="M 11 17 C 11 10, 29 10, 29 17 C 29 16, 11 16, 11 17" fill="${hairColor}" opacity="0.85" />`;
+  } else if (o.hairStyle === 'curly') {
+    svg += `<path d="M 10 16 C 9 11, 14 7, 20 7 C 26 7, 31 11, 30 16 Z" fill="${hairColor}" />`;
+    svg += `<circle cx="12" cy="11" r="3" fill="${hairColor}" />`;
+    svg += `<circle cx="16" cy="8" r="3" fill="${hairColor}" />`;
+    svg += `<circle cx="20" cy="7" r="3" fill="${hairColor}" />`;
+    svg += `<circle cx="24" cy="8" r="3" fill="${hairColor}" />`;
+    svg += `<circle cx="28" cy="11" r="3" fill="${hairColor}" />`;
+  } else if (o.hairStyle === 'wavy') {
+    svg += `<path d="M 10 17 C 10 10, 14 9, 20 11 C 26 9, 30 10, 30 17 C 31 13, 27 8, 20 8 C 13 8, 9 13, 10 17 Z" fill="${hairColor}" />`;
+    svg += `<path d="M 10 17 C 9 17, 9 13, 12 13 C 15 13, 18 11, 20 13 C 22 11, 25 13, 28 13 C 31 13, 31 17, 30 17 Z" fill="${hairColor}" />`;
+  } else if (o.hairStyle === 'long') {
+    svg += `<path d="M 10 17 C 10 10, 30 10, 30 17 C 30 26, 27 29, 27 29 C 27 29, 31 22, 31 17 C 31 9, 9 9, 9 17 C 9 22, 13 29, 13 29 C 13 29, 10 26, 10 17 Z" fill="${hairColor}" />`;
+    svg += `<path d="M 10 14 C 15 9, 25 9, 30 14 Z" fill="${hairColor}" />`;
+  } else if (o.hairStyle === 'spiky') {
+    svg += `<path d="M 9 16 L 12 10 L 15 12 L 18 7 L 22 7 L 25 12 L 28 10 L 31 16 C 27 12, 13 12, 9 16 Z" fill="${hairColor}" />`;
+  }
+
+  svg += `<circle cx="17" cy="16.5" r="1.2" fill="#111111" />`;
+  svg += `<circle cx="23" cy="16.5" r="1.2" fill="#111111" />`;
+
+  if (o.expression === 'smile') {
+    svg += `<path d="M 17 21 Q 20 23.5, 23 21" stroke="#111111" stroke-width="1.2" stroke-linecap="round" fill="none" />`;
+  } else if (o.expression === 'grin') {
+    svg += `<path d="M 16 20 Q 20 24.5, 24 20 Z" fill="#ffffff" stroke="#111111" stroke-width="1" />`;
+  } else if (o.expression === 'cool') {
+    svg += `<path d="M 17 20.5 L 23 20" stroke="#111111" stroke-width="1.2" stroke-linecap="round" fill="none" />`;
+  } else if (o.expression === 'shock') {
+    svg += `<circle cx="20" cy="21.5" r="2" fill="#ffffff" stroke="#111111" stroke-width="1" />`;
+  }
+
+  if (o.accessory === 'glasses') {
+    svg += `<circle cx="17" cy="16.5" r="3" stroke="#111111" stroke-width="1" fill="none" />`;
+    svg += `<circle cx="23" cy="16.5" r="3" stroke="#111111" stroke-width="1" fill="none" />`;
+    svg += `<line x1="18.5" y1="16.5" x2="21.5" y2="16.5" stroke="#111111" stroke-width="1" />`;
+  } else if (o.accessory === 'sunglasses') {
+    svg += `<path d="M 14 14.5 L 19 14.5 L 18.2 18 L 14.8 18 Z" fill="#111111" />`;
+    svg += `<path d="M 21 14.5 L 26 14.5 L 25.2 18 L 21.8 18 Z" fill="#111111" />`;
+    svg += `<line x1="19" y1="15.5" x2="21" y2="15.5" stroke="#111111" stroke-width="1" />`;
+  } else if (o.accessory === 'headphones') {
+    svg += `<path d="M 11 16.5 C 11 8.5, 29 8.5, 29 16.5" stroke="#3a3a55" stroke-width="2.2" fill="none" />`;
+    svg += `<rect x="9.5" y="14.5" width="2" height="4.5" rx="1" fill="#7857ff" />`;
+    svg += `<rect x="28.5" y="14.5" width="2" height="4.5" rx="1" fill="#7857ff" />`;
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function getMyAiBitmojiSVG(size = 36) {
+  return `<svg viewBox="0 0 40 40" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="border-radius: 50%; background: #FFFC00; overflow:hidden;">
+    <circle cx="20" cy="20" r="19" stroke="#111" stroke-width="1" fill="none" />
+    <rect x="11" y="13" width="18" height="8" rx="4" fill="#1c1c28" />
+    <circle cx="16" cy="17" r="1.8" fill="#00ffff" />
+    <circle cx="24" cy="17" r="1.8" fill="#00ffff" />
+    <rect x="7" y="14" width="4" height="6" rx="1" fill="#7857ff" />
+    <rect x="29" y="14" width="4" height="6" rx="1" fill="#7857ff" />
+    <line x1="20" y1="13" x2="20" y2="8" stroke="#7857ff" stroke-width="2" />
+    <circle cx="20" cy="7" r="2.2" fill="#FFFC00" stroke="#7857ff" stroke-width="1.2" />
+    <path d="M 17 25 Q 20 28, 23 25" stroke="#1c1c28" stroke-width="1.5" stroke-linecap="round" fill="none" />
+  </svg>`;
+}
+
+/* ================================================================
+   BITMOJI BUILDER MODAL
+================================================================ */
+function openBitmojiBuilder() {
+  const o = S.bitmoji;
+  const skins = ['fair', 'peach', 'olive', 'bronze', 'dark'];
+  const hairStyles = ['buzz', 'curly', 'wavy', 'long', 'spiky', 'bald'];
+  const hairColors = ['black', 'brown', 'blonde', 'red', 'pink', 'blue'];
+  const expressions = ['smile', 'grin', 'cool', 'shock'];
+  const outfits = ['purple', 'black', 'yellow', 'pink', 'green'];
+  const accessories = ['none', 'glasses', 'sunglasses', 'headphones'];
+
+  const skinHex = {fair:'#fce3db', peach:'#ffd1b3', olive:'#e0ac69', bronze:'#c68642', dark:'#8d5524'};
+  const hairHex = {black:'#111111', brown:'#5c4033', blonde:'#ebd5b3', red:'#b83c1b', pink:'#f472b6', blue:'#3b82f6'};
+  const outfitHex = {purple:'#7857ff', black:'#1a1a2a', yellow:'#FFFC00', pink:'#e879f9', green:'#22c55e'};
+
+  const bodyHtml = `
+    <div class="bitmoji-preview-card">
+      <div class="bitmoji-preview-wrap" id="bitmoji-live-preview">
+        ${getBitmojiSVG(o, 114)}
+      </div>
+    </div>
+    <div class="customizer-grid">
+      <div class="customizer-row">
+        <div class="customizer-row-title">Skin tone</div>
+        <div class="customizer-options">
+          ${skins.map(s => `<div class="swatch ${o.skin===s?'sel':''}" style="background:${skinHex[s]}" onclick="updateBitmoji('skin','${s}')"></div>`).join('')}
+        </div>
+      </div>
+      <div class="customizer-row">
+        <div class="customizer-row-title">Hair style</div>
+        <div class="customizer-options">
+          ${hairStyles.map(h => `<div class="text-opt ${o.hairStyle===h?'sel':''}" onclick="updateBitmoji('hairStyle','${h}')">${h}</div>`).join('')}
+        </div>
+      </div>
+      <div class="customizer-row">
+        <div class="customizer-row-title">Hair color</div>
+        <div class="customizer-options">
+          ${hairColors.map(hc => `<div class="swatch ${o.hairColor===hc?'sel':''}" style="background:${hairHex[hc]}" onclick="updateBitmoji('hairColor','${hc}')"></div>`).join('')}
+        </div>
+      </div>
+      <div class="customizer-row">
+        <div class="customizer-row-title">Expression</div>
+        <div class="customizer-options">
+          ${expressions.map(ex => `<div class="text-opt ${o.expression===ex?'sel':''}" onclick="updateBitmoji('expression','${ex}')">${ex}</div>`).join('')}
+        </div>
+      </div>
+      <div class="customizer-row">
+        <div class="customizer-row-title">Outfit color</div>
+        <div class="customizer-options">
+          ${outfits.map(out => `<div class="swatch ${o.outfit===out?'sel':''}" style="background:${outfitHex[out]}" onclick="updateBitmoji('outfit','${out}')"></div>`).join('')}
+        </div>
+      </div>
+      <div class="customizer-row">
+        <div class="customizer-row-title">Accessory</div>
+        <div class="customizer-options">
+          ${accessories.map(acc => `<div class="text-opt ${o.accessory===acc?'sel':''}" onclick="updateBitmoji('accessory','${acc}')">${acc}</div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="saveBitmojiCustomizer()">Save Bitmoji</button>
+  `;
+
+  openModal('bitmoji-builder', 'Customize Bitmoji', bodyHtml);
+}
+
+function updateBitmoji(key, value) {
+  S.bitmoji[key] = value;
+  const live = document.getElementById('bitmoji-live-preview');
+  if (live) live.innerHTML = getBitmojiSVG(S.bitmoji, 114);
+  
+  const target = event.currentTarget;
+  const row = target.parentNode;
+  if (key === 'skin' || key === 'hairColor' || key === 'outfit') {
+    row.querySelectorAll('.swatch').forEach(sw => sw.classList.remove('sel'));
+  } else {
+    row.querySelectorAll('.text-opt').forEach(opt => opt.classList.remove('sel'));
+  }
+  target.classList.add('sel');
+}
+
+function saveBitmojiCustomizer() {
+  saveState();
+  closeModal('bitmoji-builder');
+  toast('Profile updated');
+  updateHeaderAvatar();
+  if (S.view === 'today') renderToday();
+  else if (S.view === 'friends') renderFriends();
+  else if (S.view === 'ai') renderAi();
+}
+
+function updateHeaderAvatar() {
+  const av = document.getElementById('hdr-avatar');
+  if (av) {
+    av.innerHTML = getBitmojiSVG(S.bitmoji, 34);
+  }
+}
+
+/* ================================================================
+   SEEDING
+================================================================ */
+function seedEvents() {
+  const now = new Date();
+  function d(off,h,m) {
+    const dt = new Date(now);
+    dt.setDate(dt.getDate()+off);
+    dt.setHours(h,m,0,0);
+    return dt.toISOString();
+  }
+  return [
+    {id:1,  type:'class',      name:'AP Chemistry',         start:d(0,8,0),   end:d(0,9,30),  loc:'Room 204', priv:'Busy only',   done:false},
+    {id:2,  type:'class',      name:'English Literature',   start:d(0,9,45),  end:d(0,11,15), loc:'Room 118', priv:'Busy only',   done:false},
+    {id:3,  type:'class',      name:'Calculus AB',          start:d(0,11,30), end:d(0,13,0),  loc:'Room 302', priv:'Busy only',   done:false},
+    {id:4,  type:'assignment', name:'History Essay Draft',  start:d(0,23,59), end:d(0,23,59), loc:'',         priv:'Only me',     done:false},
+    {id:5,  type:'social',     name:'Coffee with Maya',     start:d(0,15,30), end:d(0,16,30), loc:'Blue Bottle', priv:'Friends see',done:false},
+    {id:6,  type:'practice',   name:'Volleyball Practice',  start:d(0,16,45), end:d(0,18,30), loc:'Gym A',    priv:'Friends see', done:false},
+    {id:7,  type:'exam',       name:'AP Chem Midterm',      start:d(1,8,0),   end:d(1,10,0),  loc:'Room 204', priv:'Busy only',   done:false},
+    {id:8,  type:'focus',      name:'SAT Prep Block',       start:d(0,19,0),  end:d(0,21,0),  loc:'Library',  priv:'Only me',     done:false},
+    {id:9,  type:'class',      name:'Spanish III',          start:d(1,9,0),   end:d(1,10,30), loc:'Room 210', priv:'Busy only',   done:false},
+    {id:10, type:'class',      name:'AP Chemistry',         start:d(2,8,0),   end:d(2,9,30),  loc:'Room 204', priv:'Busy only',   done:false},
+    {id:11, type:'class',      name:'PE & Health',          start:d(2,10,0),  end:d(2,11,30), loc:'Field',    priv:'Busy only',   done:false},
+    {id:12, type:'social',     name:"Movie Night @ Alex's", start:d(2,19,0),  end:d(2,22,0),  loc:"Alex's",   priv:'Friends see', done:false},
+    {id:13, type:'assignment', name:'Calc Problem Set 7',   start:d(2,23,59), end:d(2,23,59), loc:'',         priv:'Only me',     done:false},
+    {id:14, type:'class',      name:'English Literature',   start:d(3,9,45),  end:d(3,11,15), loc:'Room 118', priv:'Busy only',   done:false},
+    {id:15, type:'practice',   name:'Volleyball Away Game', start:d(3,16,0),  end:d(3,19,0),  loc:'North HS', priv:'Friends see', done:false},
+  ];
+}
+
+/* ================================================================
+   ONBOARDING
+================================================================ */
+function renderSchoolList(filter) {
+  const el = document.getElementById('school-list');
+  el.innerHTML = SCHOOLS
+    .filter(s => s.name.toLowerCase().includes((filter||'').toLowerCase()))
+    .map(s => `
+      <div class="school-row ${S.school && S.school.name===s.name ? 'sel' : ''}"
+           onclick="pickSchool('${s.name}','${s.loc}','${s.icon}')">
+        <span style="font-size:20px">${s.icon}</span>
+        <div>
+          <div class="school-row-name">${s.name}</div>
+          <div class="school-row-loc">${s.loc}</div>
+        </div>
+      </div>`).join('');
+}
+
+function filterSchools(v) { renderSchoolList(v); }
+
+function pickSchool(name, loc, icon) {
+  S.school = {name, loc, icon};
+  renderSchoolList(document.getElementById('school-search').value);
+  toast(name + ' selected');
+}
+
+function renderFriendSuggs(filter) {
+  const el = document.getElementById('f-sugg-list');
+  el.innerHTML = FRIENDS
+    .filter(f => f.name.toLowerCase().includes((filter||'').toLowerCase()) || f.uname.includes((filter||'').toLowerCase()))
+    .map(f => {
+      const added = S.friends.some(x => x.uname === f.uname);
+      return `
+        <div class="f-sugg-row">
+          <div class="f-sugg-av" style="background:${f.color}20;color:${f.color}">${f.emoji}</div>
+          <div style="flex:1">
+            <div class="f-sugg-name">${f.name}</div>
+            <div class="f-sugg-uname">${f.uname}</div>
+          </div>
+          <div class="add-circle ${added?'added':''}" onclick="toggleFriendOb('${f.uname}',this)">
+            ${added ? '✓' : '+'}
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function filterFriendSuggs(v) { renderFriendSuggs(v); }
+
+function toggleFriendOb(uname, btn) {
+  const f = FRIENDS.find(x => x.uname === uname);
+  const idx = S.friends.findIndex(x => x.uname === uname);
+  if (idx >= 0) {
+    S.friends.splice(idx, 1);
+    btn.classList.remove('added'); btn.textContent = '+';
+  } else {
+    S.friends.push(f);
+    btn.classList.add('added'); btn.textContent = '✓';
+    toast('Added ' + f.name);
+  }
+}
+
+function addBySearch() {
+  const v = document.getElementById('f-search').value.trim().toLowerCase();
+  const f = FRIENDS.find(x => x.uname.includes(v.replace('@','')) || x.name.toLowerCase().includes(v));
+  if (f && !S.friends.some(x => x.uname === f.uname)) {
+    S.friends.push(f); renderFriendSuggs(v); toast('Added ' + f.name);
+  } else {
+    toast('Try @mayak, @alexm or @samr');
+  }
+}
+
+function pickAge(v) {
+  S.age = v;
+  document.getElementById('a13').classList.toggle('sel', v==='ok');
+  document.getElementById('aU').classList.toggle('sel',  v==='no');
+  document.getElementById('age-err').style.display = v==='no' ? 'block' : 'none';
+}
+
+function goStep(n) {
+  if (n === 2 && S.age === 'no')  { toast('Orbit is for ages 13+'); return; }
+  if (n === 2 && !S.age)          { toast('Please pick your age first'); return; }
+  [1,2,3].forEach(i => document.getElementById('ob'+i).classList.add('hidden'));
+  document.getElementById('ob'+n).classList.remove('hidden');
+  if (n === 2) renderSchoolList('');
+  if (n === 3) renderFriendSuggs('');
+}
+
+function launch() {
+  document.getElementById('onboarding').style.display = 'none';
+  const app = document.getElementById('main-app');
+  app.classList.remove('hidden'); app.style.display = 'flex';
+  S.events = seedEvents();
+  document.getElementById('hdr-date').textContent = fmtHeaderDate(new Date());
+  switchView('today');
+  startClock();
+  updateHeaderAvatar();
+  setTimeout(() => toast('Schedule loaded — welcome to Orbit'), 400);
+}
+
+/* ================================================================
+   CLOCK
+================================================================ */
+let clockTick;
+function startClock() {
+  clockTick = setInterval(updateTimerWidgets, 1000);
+}
+function updateTimerWidgets() {
+  if (S.view !== 'today') return;
+  const el_num = document.getElementById('pw-num');
+  const el_day = document.getElementById('day-fill');
+  if (!el_num) return;
+  const {dayPct, remainMs, periodPct, label} = getProgress();
+  if (el_day) el_day.style.width = dayPct + '%';
+  document.getElementById('day-pct').textContent = Math.round(dayPct) + '%';
+  const mins = Math.floor(remainMs / 60000);
+  const secs = Math.floor((remainMs % 60000) / 1000);
+  el_num.textContent = remainMs > 0 ? (mins > 0 ? mins + 'm' : secs + 's') : '—';
+  const subEl = document.getElementById('pw-sub');
+  if (subEl) subEl.textContent = label;
+  const pFill = document.getElementById('period-fill');
+  if (pFill) pFill.style.width = periodPct + '%';
+}
+
+function getProgress() {
+  const now = new Date();
+  const start = new Date(now); start.setHours(7,30,0,0);
+  const end   = new Date(now); end.setHours(15,0,0,0);
+  const dayPct = Math.max(0, Math.min(100, ((now - start) / (end - start)) * 100));
+
+  const todayClasses = S.events.filter(e => {
+    const s = new Date(e.start);
+    return sameDay(s, now) && e.type !== 'assignment';
+  }).sort((a,b) => new Date(a.start) - new Date(b.start));
+
+  const cur  = todayClasses.find(e => new Date(e.start) <= now && new Date(e.end) >= now);
+  const next = todayClasses.find(e => new Date(e.start) > now);
+
+  if (cur) {
+    const rem = new Date(cur.end) - now;
+    const dur = new Date(cur.end) - new Date(cur.start);
+    return {dayPct, remainMs: rem, periodPct: Math.min(100, ((dur-rem)/dur)*100), label: 'remaining'};
+  }
+  if (next) {
+    return {dayPct, remainMs: new Date(next.start) - now, periodPct: 0, label: 'until class'};
+  }
+  return {dayPct, remainMs: 0, periodPct: 100, label: 'done for today'};
+}
+
+/* ================================================================
+   THEME TOGGLER
+================================================================ */
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  const btn = document.getElementById('theme-btn');
+  if (btn) {
+    btn.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+  }
+  S.theme = newTheme;
+  saveState();
+  toast(newTheme.charAt(0).toUpperCase() + newTheme.slice(1) + ' mode active');
+}
+
+function initTheme() {
+  const currentTheme = S.theme || 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  const btn = document.getElementById('theme-btn');
+  if (btn) {
+    btn.textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+  }
+}
+
+/* ================================================================
+   VIEW ROUTER
+================================================================ */
+function switchView(v) {
+  S.view = v;
+  ['today','week','friends','ai','board'].forEach(t => {
+    const el = document.getElementById('nt-' + t);
+    if (el) el.classList.toggle('active', t === v);
+  });
+  const mc = document.getElementById('main-content');
+  mc.style.opacity = '0';
+  setTimeout(() => {
+    if      (v === 'today')   renderToday();
+    else if (v === 'week')    renderWeek();
+    else if (v === 'friends') renderFriends();
+    else if (v === 'ai')      renderAi();
+    else if (v === 'board')   renderBoard();
+    mc.style.transition = 'opacity .2s ease';
+    mc.style.opacity = '1';
+  }, 100);
+}
+
+/* ================================================================
+   TODAY
+================================================================ */
+function renderToday() {
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good morning' : (h < 17 ? 'Good afternoon' : 'Good evening');
+  const todayEvs = S.events.filter(e => sameDay(new Date(e.start), now)).sort((a,b) => new Date(a.start) - new Date(b.start));
+  const assignments = todayEvs.filter(e => e.type === 'assignment');
+  const scheduled   = todayEvs.filter(e => e.type !== 'assignment');
+  const friendsShow = S.friends.length ? S.friends : FRIENDS.slice(0,5);
+
+  const cur  = scheduled.find(e => new Date(e.start) <= now && new Date(e.end) >= now);
+  const next = scheduled.find(e => new Date(e.start) > now);
+  const {dayPct, remainMs, periodPct, label} = getProgress();
+  const timerMins = Math.floor(remainMs / 60000);
+  const timerSecs = Math.floor((remainMs % 60000) / 1000);
+  const timerTxt  = remainMs > 0 ? (timerMins > 0 ? timerMins + 'm' : timerSecs + 's') : '—';
+  const activeEv  = cur || next;
+
+  let html = '';
+
+  html += `<div class="greeting">
+    <h1>${greet}</h1>
+    <p>${fmtDate(now)}${S.school ? ' · ' + S.school.name : ''}</p>
+  </div>`;
+
+  html += `<div class="period-widget">
+    <div class="pw-top">
+      <div>
+        <div class="pw-label">${cur ? 'Now in class' : next ? 'Up next' : 'School day'}</div>
+        <div class="pw-event-name">${activeEv ? (EV_ICONS[activeEv.type] + ' ' + activeEv.name) : 'No more classes today'}</div>
+        ${activeEv && activeEv.loc ? '<div class="pw-event-loc">'+activeEv.loc+'</div>' : ''}
+      </div>
+      <div class="pw-timer">
+        <div class="pw-timer-num" id="pw-num">${timerTxt}</div>
+        <div class="pw-timer-sub" id="pw-sub">${label}</div>
+      </div>
+    </div>
+    ${activeEv ? `
+      <div class="pw-bar-track">
+        <div id="period-fill" style="width:${cur?periodPct:0}%;background:${EV_COLORS[activeEv.type].bar}" class="prog-fill"></div>
+      </div>
+      <div class="pw-bar-meta">
+        <span>${fmtTime(new Date(activeEv.start))}</span>
+        <span>${fmtTime(new Date(activeEv.end))}</span>
+      </div>` : ''}
+  </div>`;
+
+  html += `<div class="day-bar-row">
+    <span class="day-bar-label">School day</span>
+    <div class="day-bar-track"><div id="day-fill" class="day-bar-fill" style="width:${dayPct}%"></div></div>
+    <span class="day-bar-pct" id="day-pct">${Math.round(dayPct)}%</span>
+  </div>`;
+
+  if (assignments.length) {
+    html += `<div class="sec-hd"><span class="sec-hd-title">Due today</span><span class="sec-hd-link" onclick="switchView('week')">See all</span></div>
+    <div class="due-list">`;
+    assignments.forEach(a => {
+      const c = EV_COLORS[a.type];
+      html += `<div class="due-row" onclick="toggleDone(${a.id})">
+        <div class="due-dot" style="background:${c.bar}"></div>
+        <div class="due-text ${a.done?'done':''}">${a.name}</div>
+        <span class="due-badge">11:59 PM</span>
+        <div class="due-check ${a.done?'done':''}" onclick="event.stopPropagation();toggleDone(${a.id})">${a.done?'✓':''}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="sec-hd"><span class="sec-hd-title">Friends</span><span class="sec-hd-link" onclick="switchView('friends')">View all</span></div>
+  <div class="f-strip">`;
+  friendsShow.forEach(f => {
+    html += `<div class="f-strip-item" onclick="switchView('friends')">
+      <div class="f-av-wrap">
+        <div class="f-av" style="background:${f.color}18;color:${f.color}">${f.emoji}</div>
+        <div class="f-status ${f.status}"></div>
+      </div>
+      <div class="f-strip-name">${f.name.split(' ')[0]}</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<div class="sec-hd"><span class="sec-hd-title">Schedule</span><span class="sec-hd-link" onclick="openAddEvent()">+ Add</span></div>
+  <div class="schedule-list">`;
+  if (!scheduled.length) {
+    html += `<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px">Nothing scheduled — enjoy the free time.</div>`;
+  } else {
+    scheduled.forEach(e => {
+      const c = EV_COLORS[e.type];
+      const isPast = new Date(e.end) < now;
+      const isCur  = new Date(e.start) <= now && new Date(e.end) >= now;
+      html += `<div class="sched-row ${isPast?'past':''} ${isCur?'now':''}" onclick="openEvDetail(${e.id})">
+        <div class="sched-bar" style="background:${c.bar}"></div>
+        <div class="sched-body">
+          <div class="sched-name-row">
+            <span class="sched-name">${e.name}</span>
+            <div style="display:flex;align-items:center;gap:6px">
+              ${isCur ? '<span class="now-tag">Now</span>' : ''}
+              <span class="sched-time">${fmtTime(new Date(e.start))}</span>
+            </div>
+          </div>
+          <div class="sched-meta">
+            ${e.loc ? '<span class="sched-loc">'+e.loc+'</span>' : ''}
+            <span class="sched-type">${e.type}</span>
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function toggleDone(id) {
+  const e = S.events.find(x => x.id === id);
+  if (e) { e.done = !e.done; renderToday(); toast(e.done ? 'Marked done' : 'Unmarked'); }
+}
+
+/* ================================================================
+   WEEK
+================================================================ */
+function renderWeek() {
+  const now = new Date();
+  const mon = getMonday(now, S.weekOff);
+  const days = Array.from({length:5}, (_,i) => { const d=new Date(mon); d.setDate(d.getDate()+i); return d; });
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DAYS=['Mon','Tue','Wed','Thu','Fri'];
+  const hours = Array.from({length:14}, (_,i) => i+7);
+
+  const rangeStr = `${MONTHS[mon.getMonth()]} ${mon.getDate()} — ${MONTHS[days[4].getMonth()]} ${days[4].getDate()}`;
+
+  let html = `<div class="wk-head">
+    <button class="wk-btn" onclick="chgWeek(-1)">◀</button>
+    <button class="wk-btn" onclick="chgWeek(0)" style="font-size:12px">Today</button>
+    <button class="wk-btn" onclick="chgWeek(1)">▶</button>
+    <span class="wk-range">${rangeStr}</span>
+    <div class="ov-btn ${S.overlay?'on':''}" onclick="togOverlay()">
+      👥 ${S.overlay ? 'Friends on' : 'Friends off'}
+    </div>
+  </div>
+  <div class="wk-grid"><div></div>`;
+
+  days.forEach((d,i) => {
+    const isT = sameDay(d, now);
+    const dateKey = d.toISOString().split('T')[0];
+    const dayTheme = S.dayThemes[dateKey] || 'default';
+    let themeDot = '';
+    if (dayTheme === 'sunset') themeDot = '🟠';
+    else if (dayTheme === 'ocean') themeDot = '🔵';
+    else if (dayTheme === 'forest') themeDot = '🟢';
+    else if (dayTheme === 'rose') themeDot = '🌸';
+    else if (dayTheme === 'midnight') themeDot = '🟣';
+    else if (dayTheme === 'gold') themeDot = '🟡';
+
+    html += `<div class="wk-col-hd" onclick="openDayThemePicker('${dateKey}', '${DAYS[i]} ${MONTHS[d.getMonth()]} ${d.getDate()}')" style="cursor:pointer" title="Customize theme for this day">
+      <div class="wk-col-day">${DAYS[i]} ${themeDot}</div>
+      <div class="wk-col-num ${isT?'today':''}">${d.getDate()}</div>
+    </div>`;
+  });
+
+  hours.forEach(h => {
+    const lbl = h > 12 ? (h-12)+'pm' : h === 12 ? '12pm' : h+'am';
+    html += `<div class="wk-time">${lbl}</div>`;
+    days.forEach(d => {
+      const dateKey = d.toISOString().split('T')[0];
+      const dayTheme = S.dayThemes[dateKey] || 'default';
+      let themeStyle = '';
+      if (dayTheme === 'sunset') themeStyle = 'background: rgba(245,158,11,0.05); border-right: 1px dashed rgba(245,158,11,0.12);';
+      else if (dayTheme === 'ocean') themeStyle = 'background: rgba(59,130,246,0.05); border-right: 1px dashed rgba(59,130,246,0.12);';
+      else if (dayTheme === 'forest') themeStyle = 'background: rgba(34,197,94,0.05); border-right: 1px dashed rgba(34,197,94,0.12);';
+      else if (dayTheme === 'rose') themeStyle = 'background: rgba(232,121,249,0.05); border-right: 1px dashed rgba(232,121,249,0.12);';
+      else if (dayTheme === 'midnight') themeStyle = 'background: rgba(120,87,255,0.05); border-right: 1px dashed rgba(120,87,255,0.12);';
+      else if (dayTheme === 'gold') themeStyle = 'background: rgba(234,179,8,0.05); border-right: 1px dashed rgba(234,179,8,0.12);';
+
+      const evs = S.events.filter(e => {
+        const s = new Date(e.start);
+        return sameDay(s, d) && s.getHours() === h && e.type !== 'assignment';
+      });
+      html += `<div class="wk-slot" style="${themeStyle}">`;
+      evs.forEach(e => {
+        const c = EV_COLORS[e.type];
+        const dur = (new Date(e.end) - new Date(e.start)) / 3600000;
+        const hpx = Math.max(dur * 52, 28);
+        html += `<div class="wk-ev" style="background:${c.bg};border-left-color:${c.bar};color:${c.text};height:${hpx}px" onclick="openEvDetail(${e.id})">
+          <span class="wk-ev-name">${e.name}</span>
+          <span class="wk-ev-time">${fmtTime(new Date(e.start))}</span>
+        </div>`;
+      });
+      if (S.overlay) {
+        const n = Math.floor(Math.random() * 3);
+        if (n > 0) html += `<div class="ov-bar" style="height:${n*12}px;top:${Math.floor(Math.random()*20)}px"></div>`;
+      }
+      html += `</div>`;
+    });
+  });
+  html += '</div>';
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function chgWeek(d) { S.weekOff = d === 0 ? 0 : S.weekOff + d; renderWeek(); }
+function togOverlay() { S.overlay = !S.overlay; renderWeek(); toast(S.overlay ? 'Showing friend availability' : 'Overlay off'); }
+
+/* ================================================================
+   DAY THEME PICKER
+================================================================ */
+function openDayThemePicker(dateKey, title) {
+  const currentTheme = S.dayThemes[dateKey] || 'default';
+  const themes = [
+    {id:'default', name:'None / Default', color:'#7878a0'},
+    {id:'sunset', name:'Sunset Orange 🟠', color:'#f59e0b'},
+    {id:'ocean', name:'Ocean Blue 🔵', color:'#3b82f6'},
+    {id:'forest', name:'Forest Green 🟢', color:'#22c55e'},
+    {id:'rose', name:'Rose Pink 🌸', color:'#e879f9'},
+    {id:'midnight', name:'Midnight Purple 🟣', color:'#7857ff'},
+    {id:'gold', name:'Sunny Gold 🟡', color:'#eab308'},
+  ];
+
+  const bodyHtml = `
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Pick a theme for your day block to highlight it.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${themes.map(t => `
+        <div class="school-row ${currentTheme===t.id?'sel':''}" style="padding:12px;border-left:4px solid ${t.color}" onclick="setDayTheme('${dateKey}','${t.id}')">
+          <span style="font-weight:600;font-size:14px;color:${currentTheme===t.id?'var(--purple2)':'var(--text)'}">${t.name}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  openModal('day-theme-modal', 'Theme: ' + title, bodyHtml);
+}
+
+function setDayTheme(dateKey, themeId) {
+  S.dayThemes[dateKey] = themeId;
+  saveState();
+  closeModal('day-theme-modal');
+  toast('Day theme updated!');
+  renderWeek();
+}
+
+/* ================================================================
+   FRIENDS
+================================================================ */
+function renderFriends() {
+  const list = S.friends.length ? S.friends : FRIENDS;
+  const statusText = {free:'Free right now', busy:'In class', soon:'Free in ~30 min'};
+  let html = `
+    <div class="ft-banner" onclick="openFindTime()">
+      <div>
+        <h3>Find time together</h3>
+        <p>See when everyone's free at once — no back-and-forth.</p>
+      </div>
+      <div class="ft-icon">🗓️</div>
+    </div>
+    <div class="sec-hd" style="margin-bottom:10px">
+      <span class="sec-hd-title">Your friends</span>
+      <span class="sec-hd-link" onclick="openAddFriend()">+ Add</span>
+    </div>
+    <div class="friends-list">`;
+  list.forEach(f => {
+    const dotColor = f.status==='free'?'var(--green)':f.status==='busy'?'var(--red)':'var(--amber)';
+    html += `<div class="friend-row">
+      <div class="fr-av" style="background:${f.color}18;color:${f.color}">${f.emoji}</div>
+      <div class="fr-info">
+        <div class="fr-name">${f.name}</div>
+        <div class="fr-status">
+          <div class="fr-dot" style="background:${dotColor}"></div>
+          ${statusText[f.status]}
+        </div>
+      </div>
+      <span class="fr-badge ${f.status}">${f.status==='free'?'Free':f.status==='busy'?'Busy':'Soon'}</span>
+      <button class="btn btn-ghost btn-xs" onclick="toast('Invite sent to ${f.name}')">Hang out</button>
+    </div>`;
+  });
+  html += `</div>
+    <div class="add-friend-row" onclick="openAddFriend()">
+      <span>+</span>
+      <span style="font-size:14px;font-weight:600">Add a friend by username</span>
+    </div>`;
+  document.getElementById('main-content').innerHTML = html;
+}
+
+/* ================================================================
+   BOARD
+================================================================ */
+function renderBoard() {
+  let html = `<div class="sec-hd" style="margin-bottom:12px">
+    <span class="sec-hd-title">School board</span>
+    <span class="sec-hd-link" onclick="toast('Post feature coming soon')">+ Post</span>
+  </div>
+  <div class="board-list">`;
+  BOARD_ITEMS.forEach(b => {
+    html += `<div class="board-row">
+      <span class="board-icon">${b.icon}</span>
+      <div style="flex:1">
+        <div class="board-title">${b.title}</div>
+        <div class="board-meta">${b.meta}</div>
+      </div>
+      ${b.tag ? `<span class="board-tag ${b.tag}">${b.tag==='new'?'New':'Urgent'}</span>` : ''}
+    </div>`;
+  });
+  html += `</div>`;
+  document.getElementById('main-content').innerHTML = html;
+}
+
+/* ================================================================
+   MY AI CHATBOT
+================================================================ */
+function renderAi() {
+  const chatScroll = S.aiChatHistory.map(msg => {
+    const isUser = msg.sender === 'user';
+    const av = isUser ? getBitmojiSVG(S.bitmoji, 30) : getMyAiBitmojiSVG(30);
+    return `
+      <div class="ai-msg ${isUser?'user':'ai'}">
+        <div style="flex-shrink:0; margin-top:2px;">${av}</div>
+        <div>
+          <div class="ai-bubble">${msg.text}</div>
+          <div class="ai-msg-time">${msg.time}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  let html = `
+    <div class="ai-chat-container">
+      <div class="ai-chat-header">
+        <div class="ai-chat-avatar">${getMyAiBitmojiSVG(36)}</div>
+        <div class="ai-chat-meta">
+          <div class="ai-chat-name" onclick="renameMyAi()">${S.myAiName}</div>
+          <div class="ai-chat-status">Online</div>
+        </div>
+        <button class="btn btn-ghost btn-xs" onclick="clearAiChat()">Clear chat</button>
+      </div>
+      <div class="ai-messages-scroll" id="ai-chat-scroll">
+        ${chatScroll}
+        <div id="ai-typing" class="hidden">
+          <div class="typing-indicator">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+      </div>
+      <div class="ai-quick-chips">
+        <div class="ai-chip" onclick="sendQuickPrompt('📅 What is my schedule today?')">📅 What's my schedule today?</div>
+        <div class="ai-chip" onclick="sendQuickPrompt('📚 When is my next class?')">📚 When's my next class?</div>
+        <div class="ai-chip" onclick="sendQuickPrompt('👥 Who is free right now?')">👥 Who's free right now?</div>
+        <div class="ai-chip" onclick="sendQuickPrompt('💡 Give me 3 study tips')">💡 Give me study tips</div>
+      </div>
+      <div class="ai-input-bar">
+        <input class="ai-inp-field" id="ai-msg-inp" type="text" placeholder="Send a message to ${S.myAiName}..." onkeydown="if(event.key==='Enter')sendAiMessage()" />
+        <button class="btn btn-primary btn-sm" style="border-radius:20px" onclick="sendAiMessage()">Send</button>
+      </div>
+    </div>`;
+
+  document.getElementById('main-content').innerHTML = html;
+  
+  setTimeout(() => {
+    const el = document.getElementById('ai-chat-scroll');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 10);
+}
+
+function sendQuickPrompt(txt) {
+  document.getElementById('ai-msg-inp').value = txt;
+  sendAiMessage();
+}
+
+function sendAiMessage() {
+  const inp = document.getElementById('ai-msg-inp');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+
+  const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  S.aiChatHistory.push({sender: 'user', text, time});
+  renderAi();
+
+  const typing = document.getElementById('ai-typing');
+  if (typing) typing.classList.remove('hidden');
+
+  const scroll = document.getElementById('ai-chat-scroll');
+  if (scroll) scroll.scrollTop = scroll.scrollHeight;
+
+  setTimeout(() => {
+    if (typing) typing.classList.add('hidden');
+    const reply = generateAiReply(text);
+    S.aiChatHistory.push({sender: 'ai', text: reply, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})});
+    saveState();
+    renderAi();
+  }, 1000 + Math.random() * 800);
+}
+
+function generateAiReply(text) {
+  const t = text.toLowerCase();
+  const now = new Date();
+
+  if (t.includes('schedule') || t.includes('today') || t.includes('calendar')) {
+    const todayEvs = S.events.filter(e => sameDay(new Date(e.start), now)).sort((a,b) => new Date(a.start) - new Date(b.start));
+    if (!todayEvs.length) {
+      return "You don't have anything on your calendar for today! Enjoy your free day! 🌴";
+    }
+    let reply = `Here's your schedule for today:\n`;
+    todayEvs.forEach(e => {
+      reply += `• ${EV_ICONS[e.type] || '📅'} **${e.name}**: ${fmtTime(new Date(e.start))} - ${fmtTime(new Date(e.end))}${e.loc ? ' ('+e.loc+')' : ''}\n`;
+    });
+    return reply;
+  }
+
+  if (t.includes('next class') || t.includes('next period') || t.includes('upcoming')) {
+    const todayClasses = S.events.filter(e => {
+      const s = new Date(e.start);
+      return sameDay(s, now) && e.type !== 'assignment';
+    }).sort((a,b) => new Date(a.start) - new Date(b.start));
+    const next = todayClasses.find(e => new Date(e.start) > now);
+    const cur = todayClasses.find(e => new Date(e.start) <= now && new Date(e.end) >= now);
+
+    if (cur) {
+      const rem = Math.floor((new Date(cur.end) - now) / 60000);
+      return `You are currently in **${cur.name}** in ${cur.loc || 'Room'}. It ends in ${rem} minutes!`;
+    }
+    if (next) {
+      return `Your next class is **${next.name}** at ${fmtTime(new Date(next.start))} in ${next.loc || 'Room'}.`;
+    }
+    return "You have no more classes scheduled for the rest of today! 🎉";
+  }
+
+  if (t.includes('free') || t.includes('friends')) {
+    const list = S.friends.length ? S.friends : FRIENDS;
+    const freeList = list.filter(f => f.status === 'free');
+    const soonList = list.filter(f => f.status === 'soon');
+    let reply = "";
+    if (freeList.length) reply += `🟢 **Free right now**: ${freeList.map(f => f.name).join(', ')}\n`;
+    if (soonList.length) reply += `🟡 **Free soon**: ${soonList.map(f => f.name).join(', ')}\n`;
+    if (!freeList.length && !soonList.length) {
+      reply = "All your friends seem to be in class or busy right now! 📚";
+    } else {
+      reply = "Here's who's free right now:\n" + reply + "\nTap 'Find time together' in the Friends tab to schedule a hangout!";
+    }
+    return reply;
+  }
+
+  if (t.includes('study') || t.includes('tip')) {
+    const tips = [
+      "Try the Pomodoro technique: study for 25 mins, then take a 5 min break. ⏱️",
+      "Quiz yourself instead of just re-reading notes to build active recall. 🧠",
+      "Review your notes right before you go to sleep to build long-term memory. 💤",
+      "Explain the topic to someone else (or to me!). If you can teach it, you understand it. 🎓"
+    ];
+    return "Here are my top study tips for you:\n" + tips.map((tip, i) => `${i+1}. ${tip}`).join('\n');
+  }
+
+  if (t.includes('hello') || t.includes('hi ') || t.includes('hey')) {
+    return `Hey there! I'm your Orbit My AI. How can I help you manage your school day? You can ask me what class you have next, who is free, or for study advice! 🪐`;
+  }
+
+  return `I'm here to help! You can ask me "What is my schedule today?", "Who is free?", or "Give me study tips!"`;
+}
+
+function renameMyAi() {
+  const newName = prompt("Rename My AI:", S.myAiName);
+  if (newName && newName.trim()) {
+    S.myAiName = newName.trim();
+    if (S.aiChatHistory[0] && S.aiChatHistory[0].sender === 'ai' && S.aiChatHistory[0].text.startsWith("Hey! I'm your")) {
+      S.aiChatHistory[0].text = `Hey! I'm your ${S.myAiName}. Ask me about your school schedule, your friends, or anything else! 🪐`;
+    }
+    saveState();
+    renderAi();
+    toast("Renamed to " + S.myAiName);
+  }
+}
+
+function clearAiChat() {
+  if (confirm("Clear your chat history with " + S.myAiName + "?")) {
+    S.aiChatHistory = [
+      { sender: 'ai', text: `Hey! I'm your ${S.myAiName}. Ask me about your school schedule, your friends, or anything else! 🪐`, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+    ];
+    saveState();
+    renderAi();
+  }
+}
+
+/* ================================================================
+   MODALS — generic helper
+================================================================ */
+function openModal(id, title, body) {
+  const m = document.createElement('div');
+  m.className = 'modal-bg'; m.id = id;
+  m.onclick = e => { if (e.target === m) closeModal(id); };
+  m.innerHTML = `<div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">${title}</span>
+      <div class="modal-close" onclick="closeModal('${id}')">✕</div>
+    </div>
+    <div class="modal-body">${body}</div>
+  </div>`;
+  document.body.appendChild(m);
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) { m.style.opacity='0'; m.style.transform='translateY(8px)'; m.style.transition='all .18s ease'; setTimeout(()=>m.remove(),200); }
+}
+
+/* ── ADD EVENT ─────────────────────────────────────────── */
+let newType = 'class', newPriv = 'Only me';
+function openAddEvent() {
+  const types = ['class','assignment','exam','practice','social','focus'];
+  openModal('add-ev', 'Add event', `
+    <div class="fg">
+      <label class="fl">Quick add</label>
+      <div class="ai-row">
+        <input class="fi" id="ai-inp" type="text" placeholder='e.g. "Bio lab every Tuesday 3rd period"' style="flex:1" />
+        <div class="ai-parse" onclick="doAIParse()">Parse</div>
+      </div>
+      <div id="ai-hint-box"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Type</label>
+      <div class="type-grid">
+        ${types.map(t=>`<div class="type-opt ${t===newType?'sel':''}" onclick="pickType('${t}')">
+          <span class="type-opt-icon">${EV_ICONS[t]}</span>
+          <span class="type-opt-lbl">${t}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">Name</label>
+      <input class="fi" id="ev-name" type="text" placeholder="Event name" />
+    </div>
+    <div class="fg" style="display:flex;gap:10px">
+      <div style="flex:1"><label class="fl">Date</label><input class="fi" id="ev-date" type="date" value="${new Date().toISOString().split('T')[0]}" /></div>
+      <div style="flex:1"><label class="fl">Start</label><input class="fi" id="ev-st" type="time" value="09:00" /></div>
+      <div style="flex:1"><label class="fl">End</label><input class="fi" id="ev-et" type="time" value="10:00" /></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Location</label>
+      <input class="fi" id="ev-loc" type="text" placeholder="Room, address, or leave blank" />
+    </div>
+    <div class="fg">
+      <label class="fl">Who can see this?</label>
+      <div class="priv-row">
+        ${PRIVS.map(p=>`<button class="priv-opt ${p===newPriv?'sel':''}" onclick="pickPriv('${p}')">${p}</button>`).join('')}
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="saveEvent()">Save</button>
+  `);
+}
+
+function pickType(t) {
+  newType = t;
+  document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('sel', b.querySelector('.type-opt-lbl').textContent === t));
+}
+function pickPriv(p) {
+  newPriv = p;
+  document.querySelectorAll('.priv-opt').forEach(b => b.classList.toggle('sel', b.textContent === p));
+}
+function doAIParse() {
+  const v = document.getElementById('ai-inp').value.trim();
+  if (!v) return;
+  const box = document.getElementById('ai-hint-box');
+  box.innerHTML = `<div class="ai-hint">Parsing...</div>`;
+  setTimeout(() => {
+    const nm = v.replace(/(every|on|at|from|to|until)\s+\S+/gi,'').trim() || 'New event';
+    box.innerHTML = `<div class="ai-hint">Found: <strong style="color:var(--purple2)">${nm}</strong> — <a onclick="applyParse('${nm.replace(/'/g,"\\'")}')" href="#">Apply</a></div>`;
+    if (!document.getElementById('ev-name').value) document.getElementById('ev-name').value = nm;
+  }, 900);
+}
+function applyParse(nm) { document.getElementById('ev-name').value = nm; toast('Applied'); }
+function saveEvent() {
+  const nm = document.getElementById('ev-name').value.trim();
+  if (!nm) { toast('Please enter a name'); return; }
+  const [y,mo,d] = document.getElementById('ev-date').value.split('-').map(Number);
+  const [sh,sm]  = document.getElementById('ev-st').value.split(':').map(Number);
+  const [eh,em]  = document.getElementById('ev-et').value.split(':').map(Number);
+  const loc = document.getElementById('ev-loc').value.trim();
+  const start = new Date(y,mo-1,d,sh,sm,0);
+  const end   = new Date(y,mo-1,d,eh,em,0);
+  S.events.push({id:Date.now(), type:newType, name:nm, start:start.toISOString(), end:end.toISOString(), loc, priv:newPriv, done:false});
+  closeModal('add-ev');
+  toast(nm + ' added');
+  saveState();
+  if (S.view==='today') renderToday(); else if (S.view==='week') renderWeek();
+}
+
+/* ── EVENT DETAIL ──────────────────────────────────────── */
+function openEvDetail(id) {
+  const e = S.events.find(x => x.id === id);
+  if (!e) return;
+  const c = EV_COLORS[e.type];
+  const wrap = document.createElement('div');
+  wrap.className = 'ev-overlay'; wrap.id = 'ev-detail';
+  wrap.onclick = ev => { if (ev.target === wrap) wrap.remove(); };
+  wrap.innerHTML = `<div class="ev-card">
+    <div class="ev-card-bar" style="background:${c.bar}"></div>
+    <div class="ev-card-name">${EV_ICONS[e.type]} ${e.name}</div>
+    <div class="ev-card-rows">
+      <div class="ev-card-row"><span>🕐</span><span>${fmtTime(new Date(e.start))} – ${fmtTime(new Date(e.end))}</span></div>
+      <div class="ev-card-row"><span>📅</span><span>${fmtDate(new Date(e.start))}</span></div>
+      ${e.loc ? `<div class="ev-card-row"><span>📍</span><span>${e.loc}</span></div>` : ''}
+      <div class="ev-card-row"><span>🔒</span><span>${e.priv}</span></div>
+    </div>
+    <div class="ev-card-btns">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('ev-detail').remove()">Close</button>
+      <button class="btn btn-ghost btn-sm" onclick="deleteEv(${id})">Delete</button>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+}
+function deleteEv(id) {
+  S.events = S.events.filter(e => e.id !== id);
+  document.getElementById('ev-detail')?.remove();
+  toast('Event removed');
+  saveState();
+  if (S.view==='today') renderToday(); else if (S.view==='week') renderWeek();
+}
+
+/* ── IMPORT ────────────────────────────────────────────── */
+const IMPORT_EVTS = [
+  {type:'class', name:'AP Chemistry', time:'Mon/Wed/Fri 8:00–9:30 AM', loc:'Room 204'},
+  {type:'class', name:'English Literature', time:'Mon/Tue/Thu 9:45–11:15 AM', loc:'Room 118'},
+  {type:'class', name:'Calculus AB', time:'Daily 11:30 AM–1:00 PM', loc:'Room 302'},
+  {type:'exam',  name:'AP Chem Midterm', time:'Oct 15, 8:00–10:00 AM', loc:'Room 204'},
+  {type:'assignment', name:'History Essay', time:'Oct 18, 11:59 PM', loc:''},
+  {type:'class', name:'Spanish III', time:'Tue/Thu 9:00–10:30 AM', loc:'Room 210'},
+];
+function openImport() {
+  openModal('import', 'Import schedule', `
+    <div id="imp-a">
+      <div class="import-zone" onclick="startImport()">
+        <span class="import-zone-icon">📸</span>
+        <div class="import-zone-title">Snap your schedule</div>
+        <div class="import-zone-sub">Photo of syllabus, PDF, or paste text below. We'll parse it.</div>
+      </div>
+      <textarea class="fi" id="imp-txt" rows="3" placeholder="Or paste your schedule here..." style="margin-bottom:12px"></textarea>
+      <button class="btn btn-primary" style="width:100%" onclick="startImport()">Parse schedule</button>
+    </div>
+    <div id="imp-b" class="hidden">
+      <div style="text-align:center;padding:24px 0">
+        <div style="font-size:40px;margin-bottom:12px">🤖</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:14px">Reading your schedule...</div>
+        <div class="prog-track"><div class="prog-fill" id="imp-prog" style="width:0%"></div></div>
+        <div class="prog-label" id="imp-lbl" style="margin-top:8px">Starting...</div>
+      </div>
+    </div>
+    <div id="imp-c" class="hidden">
+      <div style="margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">Found ${IMPORT_EVTS.length} events</div>
+        <div style="font-size:13px;color:var(--muted)">Review before adding to your calendar.</div>
+      </div>
+      <div class="rev-list" id="rev-list"></div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-ghost" style="flex:1" onclick="closeModal('import')">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="acceptAll()">Accept all</button>
+      </div>
+    </div>
+  `);
+}
+function startImport() {
+  document.getElementById('imp-a').classList.add('hidden');
+  document.getElementById('imp-b').classList.remove('hidden');
+  const bar = document.getElementById('imp-prog');
+  const lbl = document.getElementById('imp-lbl');
+  const steps = [[12,'Reading file...'],[35,'Finding class names...'],[60,'Parsing times...'],[80,'Mapping to calendar...'],[100,'Done!']];
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= steps.length) {
+      clearInterval(iv);
+      setTimeout(() => {
+        document.getElementById('imp-b').classList.add('hidden');
+        document.getElementById('imp-c').classList.remove('hidden');
+        renderRevList();
+      }, 300);
+      return;
+    }
+    bar.style.width = steps[i][0] + '%';
+    lbl.textContent = steps[i][1];
+    i++;
+  }, 550);
+}
+function renderRevList() {
+  document.getElementById('rev-list').innerHTML = IMPORT_EVTS.map((e,i) => `
+    <div class="rev-row" id="ri-${i}">
+      <span class="rev-icon">${EV_ICONS[e.type]}</span>
+      <div class="rev-info">
+        <div class="rev-name">${e.name}</div>
+        <div class="rev-meta">${e.time}${e.loc ? ' · ' + e.loc : ''}</div>
+      </div>
+      <div class="rev-btns">
+        <button class="btn btn-xs rev-ok" onclick="acceptRev(${i})">✓</button>
+        <button class="btn btn-xs rev-no" onclick="document.getElementById('ri-${i}').remove()">✕</button>
+      </div>
+    </div>`).join('');
+}
+function acceptRev(i) {
+  const el = document.getElementById('ri-'+i);
+  if (el) { el.style.opacity='.3'; el.style.pointerEvents='none'; }
+  toast(IMPORT_EVTS[i].name + ' added');
+  
+  // Actually add the parsed event to S.events
+  const now = new Date();
+  const dt = new Date(now);
+  dt.setDate(now.getDate() + 1); // tomorrow
+  dt.setHours(9, 0, 0, 0);
+
+  S.events.push({
+    id: Date.now() + i,
+    type: IMPORT_EVTS[i].type,
+    name: IMPORT_EVTS[i].name,
+    start: dt.toISOString(),
+    end: new Date(dt.getTime() + 90*60000).toISOString(), // 1.5 hr later
+    loc: IMPORT_EVTS[i].loc || '',
+    priv: 'Only me',
+    done: false
+  });
+  saveState();
+}
+function acceptAll() {
+  closeModal('import');
+  
+  const now = new Date();
+  IMPORT_EVTS.forEach((ev, i) => {
+    const dt = new Date(now);
+    dt.setDate(now.getDate() + (i % 3)); // spread over 3 days
+    dt.setHours(8 + (i % 2)*3, 0, 0, 0); // 8 AM or 11 AM
+
+    S.events.push({
+      id: Date.now() + i,
+      type: ev.type,
+      name: ev.name,
+      start: dt.toISOString(),
+      end: new Date(dt.getTime() + 90*60000).toISOString(),
+      loc: ev.loc || '',
+      priv: 'Only me',
+      done: false
+    });
+  });
+
+  saveState();
+  toast('All ' + IMPORT_EVTS.length + ' events added');
+  if (S.view==='today') renderToday();
+}
+
+/* ── FIND TIME ─────────────────────────────────────────── */
+function openFindTime() {
+  const fl = S.friends.length ? S.friends : FRIENDS.slice(0,3);
+  const slots = [
+    {time:'Today, 3:30–5:00 PM', dur:'1.5 hours', friends:fl.slice(0,3)},
+    {time:'Today, 7:00–9:00 PM', dur:'2 hours',   friends:fl.slice(0,2)},
+    {time:'Tomorrow, 4:00–6:00 PM', dur:'2 hours', friends:fl},
+  ];
+  openModal('find-time', 'Find time together', `
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">With</div>
+    <div class="who-chips" style="margin-bottom:16px">
+      ${fl.map(f=>`<div class="who-chip">
+        <div style="width:22px;height:22px;border-radius:50%;background:${f.color}18;color:${f.color};display:flex;align-items:center;justify-content:center;font-size:12px">${f.emoji}</div>
+        ${f.name.split(' ')[0]}
+      </div>`).join('')}
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Free windows</div>
+    <div class="slots-list">
+      ${slots.map((s,i)=>`<div class="slot-row" id="slot-${i}" onclick="pickSlot(${i})">
+        <div>
+          <div class="slot-time">${s.time}</div>
+          <div class="slot-dur">${s.dur}</div>
+        </div>
+        <div class="slot-avs">
+          ${s.friends.map(f=>`<div class="slot-av" style="background:${f.color}18;color:${f.color}">${f.emoji}</div>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px">Vote on a time</div>
+    <div class="vote-row">
+      ${slots.map((s,i)=>`<div class="vote-opt" id="vote-${i}" onclick="castVote(${i})">
+        <div class="vote-t">${s.time.split(', ')[1] || s.time}</div>
+        <div class="vote-c"><strong>${Math.floor(Math.random()*3)+1}</strong> votes</div>
+      </div>`).join('')}
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="toast('Hangout event created and sent to friends');closeModal('find-time')">Create hangout</button>
+  `);
+}
+function pickSlot(i) { document.querySelectorAll('.slot-row').forEach((el,j)=>el.classList.toggle('sel',i===j)); }
+function castVote(i) { document.querySelectorAll('.vote-opt').forEach((el,j)=>el.classList.toggle('voted',i===j)); toast('Vote recorded'); }
+
+/* ── ADD FRIEND ────────────────────────────────────────── */
+function openAddFriend() {
+  openModal('add-friend', 'Add friend', `
+    <div class="f-search-row" style="margin-bottom:14px">
+      <input class="fi" id="af-inp" type="text" placeholder="Search by @username..." oninput="renderAFList(this.value.toLowerCase())" style="flex:1" />
+      <button class="btn btn-primary btn-sm" onclick="addFromModal()">Add</button>
+    </div>
+    <div class="f-sugg-list" id="af-list"></div>
+  `);
+  setTimeout(() => renderAFList(''), 50);
+}
+function renderAFList(f) {
+  const el = document.getElementById('af-list');
+  if (!el) return;
+  el.innerHTML = FRIENDS.filter(fr => fr.name.toLowerCase().includes(f)||fr.uname.includes(f)).map(fr => {
+    const added = S.friends.some(x=>x.uname===fr.uname);
+    return `<div class="f-sugg-row">
+      <div class="f-sugg-av" style="background:${fr.color}18;color:${fr.color}">${fr.emoji}</div>
+      <div style="flex:1"><div class="f-sugg-name">${fr.name}</div><div class="f-sugg-uname">${fr.uname}</div></div>
+      <div class="add-circle ${added?'added':''}" onclick="togAF('${fr.uname}',this)">${added?'✓':'+'}</div>
+    </div>`;
+  }).join('');
+}
+function togAF(uname, btn) {
+  const f = FRIENDS.find(x=>x.uname===uname);
+  const idx = S.friends.findIndex(x=>x.uname===uname);
+  if (idx>=0) { S.friends.splice(idx,1); btn.classList.remove('added'); btn.textContent='+'; }
+  else { S.friends.push(f); btn.classList.add('added'); btn.textContent='✓'; toast('Added '+f.name); }
+  saveState();
+}
+function addFromModal() {
+  const v = document.getElementById('af-inp').value.trim().toLowerCase();
+  const f = FRIENDS.find(x=>x.uname.includes(v.replace('@',''))||x.name.toLowerCase().includes(v));
+  if (f && !S.friends.some(x=>x.uname===f.uname)) { S.friends.push(f); renderAFList(v); toast('Added '+f.name); saveState(); }
+  else toast('Try @mayak, @alexm or @samr');
+}
+
+/* ── NOTIFICATIONS ─────────────────────────────────────── */
+function toggleNotif() {
+  const ex = document.getElementById('notif-drop');
+  if (ex) { ex.remove(); return; }
+  const nd = document.createElement('div');
+  nd.className = 'notif-drop'; nd.id = 'notif-drop';
+  nd.innerHTML = `<div class="nd-title">Notifications</div>
+    <div class="nd-row"><span class="nd-icon">👥</span><div class="nd-txt"><strong>Maya is free after 3pm today</strong>Tap to plan something<div class="nd-time">2 min ago</div></div></div>
+    <div class="nd-row"><span class="nd-icon">⚠️</span><div class="nd-txt"><strong>AP Chem Midterm tomorrow</strong>Room 204 · 8:00 AM<div class="nd-time">1 hour ago</div></div></div>
+    <div class="nd-row"><span class="nd-icon">📝</span><div class="nd-txt"><strong>History Essay due tonight</strong>11:59 PM<div class="nd-time">3 hours ago</div></div></div>`;
+  document.body.appendChild(nd);
+  setTimeout(() => {
+    document.addEventListener('click', function h(e) {
+      if (!nd.contains(e.target) && !document.getElementById('notif-btn').contains(e.target)) {
+        nd.remove(); document.removeEventListener('click', h);
+      }
+    });
+  }, 80);
+}
+
+/* ── TOAST ─────────────────────────────────────────────── */
+function toast(msg, ms=2400) {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .2s ease'; setTimeout(()=>t.remove(),200); }, ms);
+}
+
+/* ── DATE HELPERS ──────────────────────────────────────── */
+function sameDay(a,b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function fmtTime(d) {
+  const h=d.getHours(), m=d.getMinutes();
+  return (h>12?h-12:h===0?12:h)+':'+(m<10?'0'+m:m)+' '+(h>=12?'PM':'AM');
+}
+function fmtDate(d) {
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+}
+function fmtHeaderDate(d) {
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()]+', '+months[d.getMonth()]+' '+d.getDate();
+}
+function getMonday(date, off) {
+  const d = new Date(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day + (day===0?-6:1) + off*7);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+/* ── INIT ──────────────────────────────────────────────── */
+(function() {
+  const savedS = localStorage.getItem('orbit_state');
+  if (savedS) {
+    try {
+      const parsed = JSON.parse(savedS);
+      if (parsed.age) S.age = parsed.age;
+      if (parsed.school) S.school = parsed.school;
+      if (parsed.friends) S.friends = parsed.friends;
+      if (parsed.events) S.events = parsed.events;
+      if (parsed.view) S.view = parsed.view;
+      if (parsed.weekOff) S.weekOff = parsed.weekOff;
+      if (parsed.overlay) S.overlay = parsed.overlay;
+      if (parsed.theme) S.theme = parsed.theme;
+      if (parsed.bitmoji) S.bitmoji = parsed.bitmoji;
+      if (parsed.myAiName) S.myAiName = parsed.myAiName;
+      if (parsed.aiChatHistory) S.aiChatHistory = parsed.aiChatHistory;
+      if (parsed.dayThemes) S.dayThemes = parsed.dayThemes;
+    } catch(e) {}
+  }
+  
+  if (!S.bitmoji) {
+    S.bitmoji = { skin: 'peach', hairStyle: 'wavy', hairColor: 'brown', expression: 'smile', outfit: 'purple', accessory: 'none' };
+  }
+  if (!S.myAiName) {
+    S.myAiName = 'My AI';
+  }
+  if (!S.aiChatHistory) {
+    S.aiChatHistory = [
+      { sender: 'ai', text: `Hey! I'm your ${S.myAiName}. Ask me about your school schedule, your friends, or anything else! 🪐`, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+    ];
+  }
+  if (!S.dayThemes) {
+    S.dayThemes = {};
+  }
+  if (!S.theme) {
+    S.theme = 'dark';
+  }
+  
+  initTheme();
+})();
+
+if (S.age === 'ok') {
+  document.getElementById('onboarding').style.display = 'none';
+  const app = document.getElementById('main-app');
+  app.classList.remove('hidden'); app.style.display = 'flex';
+  if (!S.events || !S.events.length) {
+    S.events = seedEvents();
+  }
+  document.getElementById('hdr-date').textContent = fmtHeaderDate(new Date());
+  switchView(S.view || 'today');
+  startClock();
+  updateHeaderAvatar();
+} else {
+  renderSchoolList('');
+  renderFriendSuggs('');
+}
+</script>
+</body>
+</html>
